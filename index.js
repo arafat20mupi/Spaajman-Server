@@ -18,7 +18,7 @@ app.use(express.json());
 
 
 const { MongoClient, ServerApiVersion } = require('mongodb');
-const uri = "mongodb+srv://Spaajman:rCP7LNlCZryXWaoP@cluster0.ykgi9mv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+const uri = "mongodb+srv://newProject:TDtatArVAMt2EAcF@cluster0.2lraink.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -28,23 +28,41 @@ const client = new MongoClient(uri, {
         deprecationErrors: true,
     }
 });
-const database = client.db("Spaajman").collection("service");
+const shopData = client.db("Spaajman").collection("service");
+const jobsData = client.db("Spaajman").collection("jobs");
 async function run() {
     try {
-        // Connect the client to the server	(optional starting in v4.7)
-        // await client.connect();
-
+        // shop data start
         app.get('/shop', async (req, res) => {
-            const services = await database.find().toArray();
+            const services = await shopData.find().toArray();
             res.send(services)
         })
+
+
         app.get('/shop/:id', async (req, res) => {
-            try {
-                
-            } catch (error) {
-                console.error('Error fetching service:', error);            
-            }
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await shopData.findOne(query);
+            res.send(result);
         });
+
+        // shop data end
+
+        // find all and single job api start
+
+        app.get('/jobs', async (req, res) => {
+            const jobs = await jobsData.find({}).toArray();
+            res.send(jobs)
+        })
+
+        app.get('/jobs/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await jobsData.findOne(query);
+            res.send(result);
+        });
+
+        // find all and single job api end
 
 
 
