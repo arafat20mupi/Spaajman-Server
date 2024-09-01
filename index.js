@@ -30,6 +30,7 @@ const client = new MongoClient(uri, {
 });
 const shopData = client.db("Spaajman").collection("service");
 const jobsData = client.db("Spaajman").collection("jobs");
+const blogsData = client.db("Spaajman").collection("blogs");
 async function run() {
     try {
         // shop data start
@@ -63,6 +64,22 @@ async function run() {
         });
 
         // find all and single job api end
+
+        // blog api endpoint start
+
+        app.get('/blogs', async (req, res) => {
+            const blogs = await blogsData.find({}).toArray();
+            res.send(blogs)
+        })
+
+        app.get('/blogs/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await blogsData.findOne(query);
+            res.send(result);
+        });
+
+        // blog api endpoint end
 
 
 
