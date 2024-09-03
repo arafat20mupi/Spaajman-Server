@@ -39,7 +39,6 @@ async function run() {
             res.send(services)
         })
 
-
         app.get('/shop/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
@@ -61,25 +60,6 @@ async function run() {
             const query = { _id: new ObjectId(id) }
             const result = await jobsData.findOne(query);
             res.send(result);
-        });
-
-        app.get("/findJobByRole", async (req, res) => {
-            const { role } = req.query;
-
-            if (!role) {
-                return res.status(400).json({ error: 'Role query parameter is required' });
-            }
-
-            try {
-                const jobs = await jobsData.find({ role: { $regex: new RegExp(role, 'i') } }).toArray();
-                if (jobs.length === 0) {
-                    return res.status(404).json({ message: 'No jobs found for the specified role' });
-                }
-                res.json(jobs);
-            } catch (error) {
-                console.error('Error retrieving jobs:', error);
-                res.status(500).json({ error: 'An error occurred while retrieving jobs' });
-            }
         });
 
 
