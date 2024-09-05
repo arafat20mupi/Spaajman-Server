@@ -48,6 +48,13 @@ async function run() {
 
         // shop data end
 
+        // shop Post Api Start
+        app.post('/shop', async (req, res) => {
+            const newService = req.body;
+            const result = await shopData.insertOne(newService);
+            res.status(201).send(result);
+        })
+        
         // find all and single job api start
 
         app.get('/jobs', async (req, res) => {
@@ -62,9 +69,14 @@ async function run() {
             res.send(result);
         });
 
-
         // find all and single job api end
+        // Job Post Api Start 
 
+        app.post('/jobs', async (req, res) => {
+            const newJob = req.body;
+            const result = await jobsData.insertOne(newJob);
+            res.status(201).send(result);
+        });
         // blog api endpoint start
 
         app.get('/blogs', async (req, res) => {
@@ -81,13 +93,7 @@ async function run() {
 
         // blog api endpoint end
 
-        // Job Post Api Start 
 
-        app.post('/jobs', async (req, res) => {
-            const newJob = req.body;
-            const result = await jobsData.insertOne(newJob);
-            res.status(201).send(result);
-        });
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
