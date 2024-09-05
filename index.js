@@ -54,7 +54,21 @@ async function run() {
             const result = await shopData.insertOne(newService);
             res.status(201).send(result);
         })
-        
+
+        // registerAs api service
+
+        app.get('/user/registerAs/:type', async (req, res) => {
+            try {
+                const type = req.params.type;
+                const query = { registerAs: type };
+                const users = await shopData.find(query).toArray();
+                res.send(users);
+            } catch (error) {
+                res.status(500).send({ error: 'Failed to fetch users' });
+            }
+        });
+
+
         // find all and single job api start
 
         app.get('/jobs', async (req, res) => {
@@ -92,8 +106,6 @@ async function run() {
         });
 
         // blog api endpoint end
-
-
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
