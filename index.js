@@ -1,9 +1,10 @@
-require('dotenv').config();
 const express = require('express')
 const app = express()
 const cors = require('cors');
-const port = process.env.PORT || 5000
-const { ObjectId } = require('mongodb');
+require('dotenv').config();
+const port = process.env.PORT || 5000;
+const jwt = require('jsonwebtoken');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 //middleware
 app.use(cors({
@@ -17,8 +18,9 @@ app.use(express.json());
 
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
 const uri = "mongodb+srv://newProject:TDtatArVAMt2EAcF@cluster0.2lraink.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+
+
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -28,11 +30,22 @@ const client = new MongoClient(uri, {
         deprecationErrors: true,
     }
 });
+const userCollection = client.db("Spaajman").collection("user");
 const shopData = client.db("Spaajman").collection("service");
 const jobsData = client.db("Spaajman").collection("jobs");
 const blogsData = client.db("Spaajman").collection("blogs");
 async function run() {
     try {
+
+        // jwt
+        app.post('/jwt', async (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+            res.send({ token });
+        });
+
+
+
         // shop data start
         app.get('/shop', async (req, res) => {
             const services = await shopData.find().toArray();
@@ -57,15 +70,29 @@ async function run() {
 
         // registerAs api service
 
-        app.get('/user/registerAs/:type', async (req, res) => {
-            try {
-                const type = req.params.type;
-                const query = { registerAs: type };
-                const users = await shopData.find(query).toArray();
-                res.send(users);
-            } catch (error) {
-                res.status(500).send({ error: 'Failed to fetch users' });
+        // app.get('/user/registerAs/:type', async (req, res) => {
+        //     try {
+        //         const type = req.params.type;
+        //         const query = { registerAs: type };
+        //         const users = await shopData.find(query).toArray();
+        //         res.send(users);
+        //     } catch (error) {
+        //         res.status(500).send({ error: 'Failed to fetch users' });
+        //     }
+        // });
+
+        app.post('/users', async (req, res) => {
+            const user = req.body;
+            // insert email if user does not exist
+            // you can do this many way
+            const query = { email: user.email }
+            const existingUser = await userCollection.findOne(query);
+            if (existingUser) {
+                return res.send({ message: 'User already exists', insertedId: null });
             }
+
+            const result = await userCollection.insertOne(user);
+            res.send(result);
         });
 
 
