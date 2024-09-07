@@ -35,6 +35,7 @@ const userCollection = client.db("Spaajman").collection("user");
 const shopData = client.db("Spaajman").collection("service");
 const jobsData = client.db("Spaajman").collection("jobs");
 const blogsData = client.db("Spaajman").collection("blogs");
+const requestedShop = client.db("Spaajman").collection("requestedShop");
 async function run() {
     try {
 
@@ -69,6 +70,29 @@ async function run() {
             res.status(201).send(result);
         })
 
+        // Shop Request korbo Admin ar kase
+
+        app.post('/requestedShop', async (req, res) => {
+            const shopDetails = req.body;
+            console.log(shopDetails);
+            try {
+                const result = await requestedShop.insertOne(shopDetails);
+                res.status(200).json({ message: 'Shop Requested successfully' });
+            } catch (error) {
+                res.status(500).json({ message: 'Failed to Shop Requested' });
+            }
+        });
+
+        app.get('/requestedShop', async (req, res) => {
+            try {
+                const Shop = await requestedShop.find().toArray();
+                res.status(200).json(Shop);
+            } catch (error) {
+                res.status(500).json({ message: 'Failed to fetch Shop' });
+            }
+        });
+
+
         // registerAs api service
 
         // app.get('/user/registerAs/:type', async (req, res) => {
@@ -95,7 +119,10 @@ async function run() {
             const result = await userCollection.insertOne(user);
             res.send(result);
         });
-
+        app.get('/users', async (req, res) => {
+            const users = await userCollection.find().toArray();
+            res.send(users)
+        })
 
         // find all and single job api start
 
