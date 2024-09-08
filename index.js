@@ -70,6 +70,13 @@ async function run() {
             res.status(201).send(result);
         })
 
+        app.delete('/shop/:id', async(req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await shopData.deleteOne(query);
+            res.send(result);
+        });
+
 
         // shop register method
 
