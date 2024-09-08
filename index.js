@@ -70,6 +70,42 @@ async function run() {
             res.status(201).send(result);
         })
 
+
+        // shop register method
+
+        app.get('/shop/position/:email', async (req, res) => {
+            const email = req.params.email;
+            // if (email !== req.decoded.email) {
+            //     return res.status(403).send({ message: 'Unauthorized request' });
+            // }
+
+            const query = { email: email };
+            const user = await shopData.findOne(query);
+            let positionAs = false;
+            if (user) {
+                positionAs = user?.positionAs === 'shop';
+            }
+            // res.send({ positionAs });
+            res.send({ position: positionAs });
+        });
+
+        app.patch('/shop/approved/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const options = { upsert: true }
+            const updatedDoc = {
+                $set: {
+                    status: 'approved',
+                    positionAs: 'shop'
+                }
+            };
+            const result = await shopData.updateOne(filter, updatedDoc, options);
+            res.send(result);
+
+        });
+
+
+
         // Shop Request korbo Admin ar kase
 
         app.post('/requestedShop', async (req, res) => {
@@ -123,6 +159,43 @@ async function run() {
             const users = await userCollection.find().toArray();
             res.send(users)
         })
+
+
+        app.delete('/users/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await userCollection.deleteOne(query);
+            res.send(result);
+        });
+
+        // admin apis
+        app.get('/users/admin/:email', async (req, res) => {
+            const email = req.params.email;
+            // if (email !== req.decoded.email) {
+            //     return res.status(403).send({ message: 'Unauthorized request' });
+            // }
+
+            const query = { email: email };
+            const user = await userCollection.findOne(query);
+            let admin = false;
+            if (user) {
+                admin = user?.role === 'admin';
+            }
+            res.send({ admin });
+        });
+
+
+        app.patch('/users/admin/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const updatedDoc = {
+                $set: {
+                    role: 'admin'
+                }
+            };
+            const result = await userCollection.updateOne(filter, updatedDoc);
+            res.send(result);
+        });
 
         // find all and single job api start
 
