@@ -70,7 +70,7 @@ async function run() {
             res.status(201).send(result);
         })
 
-        app.delete('/shop/:id', async(req, res) => {
+        app.delete('/shop/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await shopData.deleteOne(query);
@@ -117,7 +117,6 @@ async function run() {
 
         app.post('/requestedShop', async (req, res) => {
             const shopDetails = req.body;
-            console.log(shopDetails);
             try {
                 const result = await requestedShop.insertOne(shopDetails);
                 res.status(200).json({ message: 'Shop Requested successfully' });
@@ -136,23 +135,8 @@ async function run() {
         });
 
 
-        // registerAs api service
-
-        // app.get('/user/registerAs/:type', async (req, res) => {
-        //     try {
-        //         const type = req.params.type;
-        //         const query = { registerAs: type };
-        //         const users = await shopData.find(query).toArray();
-        //         res.send(users);
-        //     } catch (error) {
-        //         res.status(500).send({ error: 'Failed to fetch users' });
-        //     }
-        // });
-
         app.post('/users', async (req, res) => {
             const user = req.body;
-            // insert email if user does not exist
-            // you can do this many way
             const query = { email: user.email }
             const existingUser = await userCollection.findOne(query);
             if (existingUser) {
@@ -167,21 +151,50 @@ async function run() {
             res.send(users)
         })
 
-
-        app.delete('/users/:id', async (req, res) => {
+        app.delete('/jobs/:id', async (req, res) => {
             const id = req.params.id;
-            const query = { _id: new ObjectId(id) }
-            const result = await userCollection.deleteOne(query);
-            res.send(result);
+        
+            try {
+                const query = { _id: new ObjectId(id) };
+                const result = await jobsData.deleteOne(query);
+        
+                if (result.deletedCount === 1) {
+                    res.status(200).send({ message: "Job deleted successfully" });
+                } else {
+                    res.status(404).send({ message: "Job not found" });
+                }
+            } catch (error) {
+                console.error('Failed to delete job:', error); // Log the error details
+                res.status(500).send({ message: "Failed to delete job", error: error.message });
+            }
         });
+        
+
+        app.put('/jobs/:id', async (req, res) => {
+            const id = req.params.id;
+            const updatedJob = req.body;
+
+            try {
+                const query = { _id: new ObjectId(id) };
+                const update = {
+                    $set: updatedJob,
+                };
+                const result = await jobsData.updateOne(query, update);
+
+                if (result.matchedCount === 1) {
+                    res.status(200).send({ message: "Job updated successfully" });
+                } else {
+                    res.status(404).send({ message: "Job not found" });
+                }
+            } catch (error) {
+                res.status(500).send({ message: "Failed to update job", error });
+            }
+        });
+
 
         // admin apis
         app.get('/users/admin/:email', async (req, res) => {
             const email = req.params.email;
-            // if (email !== req.decoded.email) {
-            //     return res.status(403).send({ message: 'Unauthorized request' });
-            // }
-
             const query = { email: email };
             const user = await userCollection.findOne(query);
             let admin = false;
