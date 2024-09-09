@@ -36,6 +36,8 @@ const shopData = client.db("Spaajman").collection("service");
 const jobsData = client.db("Spaajman").collection("jobs");
 const blogsData = client.db("Spaajman").collection("blogs");
 const requestedShop = client.db("Spaajman").collection("requestedShop");
+const appliedJobData = client.db("Spaajman").collection('appliedJob')
+
 async function run() {
     try {
 
@@ -44,6 +46,62 @@ async function run() {
             const user = req.body;
             const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
             res.send({ token });
+        });
+
+
+        // appliedJobData
+        app.post('/appliedJob', async (req, res) => {
+            const appliedJobDetails = req.body;
+            try {
+                const result = await appliedJobData.insertOne(appliedJobDetails);
+                res.status(200).json({ message: 'Applied Job Data successfully' });
+            } catch (error) {
+                res.status(500).json({ message: 'Failed to Applied Job Data' });
+            }
+        })
+
+        app.get('/appliedJob', async (req, res) => {
+            const appliedJob = await appliedJobData.find().toArray();
+            res.send(appliedJob)
+        })
+       
+
+        app.put('/appliedJob/:id', async (req, res) => {
+            const id = req.params.id;
+            const updatedService = req.body;
+
+            // Validate the ID
+            if (!ObjectId.isValid(id)) {
+                return res.status(400).json({ message: 'Invalid job ID' });
+            }
+
+            // Check if the data to update is provided
+            if (!updatedService || Object.keys(updatedService).length === 0) {
+                return res.status(400).json({ message: 'No data provided to update' });
+            }
+
+            const query = { _id: new ObjectId(id) };
+            const updateDocument = { $set: updatedService };
+            const options = { upsert: false };  // No upsert to avoid creating new documents
+
+            try {
+                // Update the applied job data in the collection
+                const result = await appliedJobData.updateOne(query, updateDocument, options);
+
+                // Check if any documents were matched
+                if (result.matchedCount === 0) {
+                    return res.status(404).json({ message: 'Job application not found' });
+                }
+
+                // Check if the document was actually modified
+                if (result.modifiedCount === 1) {
+                    res.status(200).json({ message: 'Job application updated successfully' });
+                } else {
+                    res.status(200).json({ message: 'No changes were made to the job application' });
+                }
+            } catch (error) {
+                res.status(500).json({ message: 'Failed to update job application', error: error.message });
+            }
         });
 
 
@@ -153,11 +211,11 @@ async function run() {
 
         app.delete('/jobs/:id', async (req, res) => {
             const id = req.params.id;
-        
+
             try {
                 const query = { _id: new ObjectId(id) };
                 const result = await jobsData.deleteOne(query);
-        
+
                 if (result.deletedCount === 1) {
                     res.status(200).send({ message: "Job deleted successfully" });
                 } else {
@@ -168,7 +226,7 @@ async function run() {
                 res.status(500).send({ message: "Failed to delete job", error: error.message });
             }
         });
-        
+
 
         app.put('/jobs/:id', async (req, res) => {
             const id = req.params.id;
