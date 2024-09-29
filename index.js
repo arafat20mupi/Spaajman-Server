@@ -1,27 +1,24 @@
-const express = require('express')
-const app = express()
+const express = require('express');
+const app = express();
 const cors = require('cors');
 require('dotenv').config();
 const port = process.env.PORT || 5000;
 const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
-//middleware
+// Middleware
 app.use(cors({
     origin: [
         "http://localhost:5173",
-        'http://localhost:5174'
+        'http://localhost:5174',
+        'https://spaajman-com.web.app'
     ],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     credentials: true,
 }));
 app.use(express.json());
 
-
-
-const uri = "mongodb+srv://newProject:TDtatArVAMt2EAcF@cluster0.2lraink.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
-
-
+const uri = `mongodb+srv://Spaajman:BpHTiEPnbhpCjcar@cluster0.ykgi9mv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -31,25 +28,26 @@ const client = new MongoClient(uri, {
         deprecationErrors: true,
     }
 });
+
+// Collections
 const userCollection = client.db("Spaajman").collection("user");
 const shopData = client.db("Spaajman").collection("service");
 const jobsData = client.db("Spaajman").collection("jobs");
 const blogsData = client.db("Spaajman").collection("blogs");
 const requestedShop = client.db("Spaajman").collection("requestedShop");
-const appliedJobData = client.db("Spaajman").collection('appliedJob')
+const appliedJobData = client.db("Spaajman").collection('appliedJob');
+const directionsData = client.db("Spaajman").collection("directions");
 
 async function run() {
     try {
-
-        // jwt
+        // JWT
         app.post('/jwt', async (req, res) => {
             const user = req.body;
             const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
             res.send({ token });
         });
 
-
-        // appliedJobData
+        // Applied Job Data
         app.post('/appliedJob', async (req, res) => {
             const appliedJobDetails = req.body;
             try {
@@ -58,13 +56,12 @@ async function run() {
             } catch (error) {
                 res.status(500).json({ message: 'Failed to Applied Job Data' });
             }
-        })
+        });
 
         app.get('/appliedJob', async (req, res) => {
             const appliedJob = await appliedJobData.find().toArray();
-            res.send(appliedJob)
-        })
-       
+            res.send(appliedJob);
+        });
 
         app.put('/appliedJob/:id', async (req, res) => {
             const id = req.params.id;
@@ -82,97 +79,68 @@ async function run() {
 
             const query = { _id: new ObjectId(id) };
             const updateDocument = { $set: updatedService };
-            const options = { upsert: false };  // No upsert to avoid creating new documents
+            const options = { upsert: false };
 
             try {
-                // Update the applied job data in the collection
                 const result = await appliedJobData.updateOne(query, updateDocument, options);
-
-                // Check if any documents were matched
                 if (result.matchedCount === 0) {
                     return res.status(404).json({ message: 'Job application not found' });
                 }
-
-                // Check if the document was actually modified
-                if (result.modifiedCount === 1) {
-                    res.status(200).json({ message: 'Job application updated successfully' });
-                } else {
-                    res.status(200).json({ message: 'No changes were made to the job application' });
-                }
+                res.status(200).json({ message: 'Job application updated successfully' });
             } catch (error) {
                 res.status(500).json({ message: 'Failed to update job application', error: error.message });
             }
         });
 
-
-
-        // shop data start
+        // Shop Data
         app.get('/shop', async (req, res) => {
             const services = await shopData.find().toArray();
-            res.send(services)
-        })
+            res.send(services);
+        });
 
         app.get('/shop/:id', async (req, res) => {
             const id = req.params.id;
-            const query = { _id: new ObjectId(id) }
+            const query = { _id: new ObjectId(id) };
             const result = await shopData.findOne(query);
             res.send(result);
         });
 
-        // shop data end
-
-        // shop Post Api Start
+        // Shop Post API
         app.post('/shop', async (req, res) => {
             const newService = req.body;
             const result = await shopData.insertOne(newService);
             res.status(201).send(result);
-        })
+        });
 
         app.delete('/shop/:id', async (req, res) => {
             const id = req.params.id;
-            const query = { _id: new ObjectId(id) }
+            const query = { _id: new ObjectId(id) };
             const result = await shopData.deleteOne(query);
             res.send(result);
         });
 
-
-        // shop register method
-
+        // Shop Register Method
         app.get('/shop/position/:email', async (req, res) => {
             const email = req.params.email;
-            // if (email !== req.decoded.email) {
-            //     return res.status(403).send({ message: 'Unauthorized request' });
-            // }
-
             const query = { email: email };
             const user = await shopData.findOne(query);
-            let positionAs = false;
-            if (user) {
-                positionAs = user?.positionAs === 'shop';
-            }
-            // res.send({ positionAs });
-            res.send({ position: positionAs });
+            res.send({ position: user?.positionAs === 'shop' });
         });
 
         app.patch('/shop/approved/:id', async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
-            const options = { upsert: true }
             const updatedDoc = {
                 $set: {
                     status: 'approved',
                     positionAs: 'shop'
                 }
             };
-            const result = await shopData.updateOne(filter, updatedDoc, options);
+            const result = await shopData.updateOne(filter, updatedDoc);
             res.send(result);
-
         });
 
-
-
-        // Shop Request korbo Admin ar kase
-
+        // Shop Request
         app.post('/requestedShop', async (req, res) => {
             const shopDetails = req.body;
             try {
@@ -185,17 +153,17 @@ async function run() {
 
         app.get('/requestedShop', async (req, res) => {
             try {
-                const Shop = await requestedShop.find().toArray();
-                res.status(200).json(Shop);
+                const shop = await requestedShop.find().toArray();
+                res.status(200).json(shop);
             } catch (error) {
                 res.status(500).json({ message: 'Failed to fetch Shop' });
             }
         });
 
-
+        // User Management
         app.post('/users', async (req, res) => {
             const user = req.body;
-            const query = { email: user.email }
+            const query = { email: user.email };
             const existingUser = await userCollection.findOne(query);
             if (existingUser) {
                 return res.send({ message: 'User already exists', insertedId: null });
@@ -204,29 +172,26 @@ async function run() {
             const result = await userCollection.insertOne(user);
             res.send(result);
         });
+
         app.get('/users', async (req, res) => {
             const users = await userCollection.find().toArray();
-            res.send(users)
-        })
+            res.send(users);
+        });
 
         app.delete('/jobs/:id', async (req, res) => {
             const id = req.params.id;
-
             try {
                 const query = { _id: new ObjectId(id) };
                 const result = await jobsData.deleteOne(query);
-
                 if (result.deletedCount === 1) {
                     res.status(200).send({ message: "Job deleted successfully" });
                 } else {
                     res.status(404).send({ message: "Job not found" });
                 }
             } catch (error) {
-                console.error('Failed to delete job:', error); // Log the error details
                 res.status(500).send({ message: "Failed to delete job", error: error.message });
             }
         });
-
 
         app.put('/jobs/:id', async (req, res) => {
             const id = req.params.id;
@@ -238,7 +203,6 @@ async function run() {
                     $set: updatedJob,
                 };
                 const result = await jobsData.updateOne(query, update);
-
                 if (result.matchedCount === 1) {
                     res.status(200).send({ message: "Job updated successfully" });
                 } else {
@@ -249,19 +213,13 @@ async function run() {
             }
         });
 
-
-        // admin apis
+        // Admin APIs
         app.get('/users/admin/:email', async (req, res) => {
             const email = req.params.email;
             const query = { email: email };
             const user = await userCollection.findOne(query);
-            let admin = false;
-            if (user) {
-                admin = user?.role === 'admin';
-            }
-            res.send({ admin });
+            res.send({ admin: user?.role === 'admin' });
         });
-
 
         app.patch('/users/admin/:id', async (req, res) => {
             const id = req.params.id;
@@ -275,60 +233,95 @@ async function run() {
             res.send(result);
         });
 
-        // find all and single job api start
-
+        // Job APIs
         app.get('/jobs', async (req, res) => {
             const jobs = await jobsData.find({}).toArray();
-            res.send(jobs)
-        })
+            res.send(jobs);
+        });
+
+        app.post('/jobs', async (req, res) => {
+            const jobDetails = req.body;
+            const result = await jobsData.insertOne(jobDetails);
+            res.status(201).send(result);
+        });
 
         app.get('/jobs/:id', async (req, res) => {
             const id = req.params.id;
-            const query = { _id: new ObjectId(id) }
+            const query = { _id: new ObjectId(id) };
             const result = await jobsData.findOne(query);
             res.send(result);
         });
 
-        // find all and single job api end
-        // Job Post Api Start 
-
-        app.post('/jobs', async (req, res) => {
-            const newJob = req.body;
-            const result = await jobsData.insertOne(newJob);
+        // Blog APIs
+        app.post('/blogs', async (req, res) => {
+            const blogDetails = req.body;
+            const result = await blogsData.insertOne(blogDetails);
             res.status(201).send(result);
         });
-        // blog api endpoint start
 
         app.get('/blogs', async (req, res) => {
             const blogs = await blogsData.find({}).toArray();
-            res.send(blogs)
-        })
+            res.send(blogs);
+        });
 
-        app.get('/blogs/:id', async (req, res) => {
+        app.delete('/blogs/:id', async (req, res) => {
             const id = req.params.id;
-            const query = { _id: new ObjectId(id) }
-            const result = await blogsData.findOne(query);
+            const query = { _id: new ObjectId(id) };
+            const result = await blogsData.deleteOne(query);
             res.send(result);
         });
 
-        // blog api endpoint end
+        // Directions API
+        app.post('/directions', (req, res) => {
+            const { origin, destination } = req.body;
+        
+            // Use the Google Maps Directions API here
+            const directionsService = new google.maps.DirectionsService();
+        
+            directionsService.route(
+                {
+                    origin,
+                    destination,
+                    travelMode: google.maps.TravelMode.DRIVING,
+                },
+                (result, status) => {
+                    if (status === google.maps.DirectionsStatus.OK) {
+                        res.json({
+                            status: 'OK',
+                            directions: result,
+                        });
+                    } else {
+                        res.json({
+                            status: status,
+                            message: 'Error getting directions',
+                        });
+                    }
+                }
+            );
+        });
+        
 
-        // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
+        app.get('/directions', async (req, res) => {
+            const directions = await directionsData.find().toArray();
+            res.send(directions);
+        });
+
+        app.delete('/directions/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await directionsData.deleteOne(query);
+            res.send(result);
+        });
+
+        
     } finally {
         // Ensures that the client will close when you finish/error
         // await client.close();
     }
 }
+
 run().catch(console.dir);
 
-
-
-app.get('/', (req, res) => {
-    res.send('Hello World!')
-})
-
 app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`)
-})
+    console.log(`Server running on port ${port}`);
+});
