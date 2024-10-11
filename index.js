@@ -11,7 +11,9 @@ app.use(cors({
     origin: [
         "http://localhost:5173",
         'http://localhost:5174',
-        'https://spaajman-com.web.app'
+        'https://spaajman-com.web.app',
+        'https://sparlax.com',
+        "https://spaajman.co"
     ],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     credentials: true,
@@ -37,7 +39,7 @@ const blogsData = client.db("Spaajman").collection("blogs");
 const requestedShop = client.db("Spaajman").collection("requestedShop");
 const appliedJobData = client.db("Spaajman").collection('appliedJob');
 const directionsData = client.db("Spaajman").collection("directions");
-
+const profile = client.db("Spaajman").collection("profile");
 async function run() {
     try {
         // JWT
@@ -105,6 +107,23 @@ async function run() {
             res.send(result);
         });
 
+        app.get('/shopData/:email', async (req, res) => {
+            const { email } = req.params;
+
+            try {
+                const user = await shopData.findOne({ email });
+
+                if (!user) {
+                    return res.status(404).json({ message: 'User not found' });
+                }
+
+                res.status(200).json(user);
+            } catch (error) {
+                console.error('Error fetching user:', error);
+                res.status(500).json({ message: 'Internal server error' });
+            }
+        });
+
         // Shop Post API
         app.post('/shop', async (req, res) => {
             const newService = req.body;
@@ -112,12 +131,40 @@ async function run() {
             res.status(201).send(result);
         });
 
+
+        // Update shop data (services)
+        app.put('/shop/:id', async (req, res) => {
+            const id = req.params.id;
+            const updatedService = req.body; // This should contain the updated data
+
+            // Define the update query
+            const query = { _id: new ObjectId(id) };
+            const update = {
+                $set: updatedService // Use $set to update the fields in the document
+            };
+
+            try {
+                const result = await shopData.updateOne(query, update);
+
+                if (result.modifiedCount === 1) {
+                    res.send({ message: 'Service updated successfully' });
+                } else {
+                    res.status(404).send({ message: 'Service not found or no changes made' });
+                }
+            } catch (error) {
+                console.error("Error updating service:", error);
+                res.status(500).send({ message: 'Internal Server Error' });
+            }
+        });
+
+
         app.delete('/shop/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
             const result = await shopData.deleteOne(query);
             res.send(result);
         });
+
 
         // Shop Register Method
         app.get('/shop/position/:email', async (req, res) => {
@@ -177,6 +224,62 @@ async function run() {
             const users = await userCollection.find().toArray();
             res.send(users);
         });
+        // Get User Data API
+        app.get('/users/:id', async (req, res) => {
+            const { id } = req.params;
+
+            if (!id) {
+                return res.status(400).json({ message: 'User ID is required' });
+            }
+
+            try {
+                const user = await userCollection.findOne({ _id: new ObjectId(id) });
+
+                if (!user) {
+                    return res.status(404).json({ message: 'User not found' });
+                }
+
+                res.status(200).json(user);
+            } catch (error) {
+                console.error('Error fetching user:', error);
+                res.status(500).json({ message: 'Internal Server Error', error: error.message });
+            }
+        });
+
+
+        // Update Profile API
+        app.put('/users/:id', async (req, res) => {
+            const userId = req.params.id; // Get userId from the URL
+            const updatedData = req.body.updatedData; // Assuming updatedData is directly in the body
+
+            // Validate the userId
+            if (!userId) {
+                return res.status(400).json({ message: 'User ID is required' });
+            }
+
+            // Validate the updated data
+            if (!updatedData || Object.keys(updatedData).length === 0) {
+                return res.status(400).json({ message: 'No data provided to update' });
+            }
+
+            const query = { _id: new ObjectId(userId) };
+            const update = { $set: updatedData };
+
+            try {
+                const result = await userCollection.updateOne(query, update);
+
+                if (result.modifiedCount === 1) {
+                    res.status(200).json({ message: 'User updated successfully' });
+                } else {
+                    res.status(404).json({ message: 'User not found or no changes made' });
+                }
+            } catch (error) {
+                console.error('Error updating user:', error);
+                res.status(500).json({ message: 'Internal Server Error', error: error.message });
+            }
+        });
+
+
 
         app.delete('/jobs/:id', async (req, res) => {
             const id = req.params.id;
@@ -274,10 +377,10 @@ async function run() {
         // Directions API
         app.post('/directions', (req, res) => {
             const { origin, destination } = req.body;
-        
+
             // Use the Google Maps Directions API here
             const directionsService = new google.maps.DirectionsService();
-        
+
             directionsService.route(
                 {
                     origin,
@@ -299,7 +402,7 @@ async function run() {
                 }
             );
         });
-        
+
 
         app.get('/directions', async (req, res) => {
             const directions = await directionsData.find().toArray();
@@ -313,7 +416,7 @@ async function run() {
             res.send(result);
         });
 
-        
+
     } finally {
         // Ensures that the client will close when you finish/error
         // await client.close();
